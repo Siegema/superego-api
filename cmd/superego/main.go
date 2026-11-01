@@ -14,6 +14,7 @@ import (
 	"github.com/siegema/superego-api/internal/accounts"
 	"github.com/siegema/superego-api/internal/database"
 	"github.com/siegema/superego-api/internal/server"
+	"github.com/siegema/superego-api/internal/web"
 	"github.com/siegema/superego-api/internal/work"
 )
 
@@ -37,7 +38,12 @@ func run(ctx context.Context) error {
 	if err := accounts.NewRepository(pool).EnsureDevelopmentUser(startup); err != nil {
 		return fmt.Errorf("initialize development user (apply migrations first): %w", err)
 	}
-	handler := server.NewHandler(work.NewHandler(work.NewRepository(pool), accounts.DevelopmentUserID))
+	repo := work.NewRepository(pool)
+	website, err := web.NewHandler(repo, accounts.DevelopmentUserID)
+	if err != nil {
+		return fmt.Errorf("initialize website: %w", err)
+	}
+	handler := server.NewHandler(work.NewHandler(repo, accounts.DevelopmentUserID), website)
 	srv := &http.Server{
 		// There is no authentication yet. Do not expose this listener publicly.
 		Addr:              httpAddress(),

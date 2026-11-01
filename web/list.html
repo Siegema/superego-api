@@ -1,0 +1,29 @@
+{{define "list"}}{{template "header" .}}
+  <section class="page-heading">
+    <p class="eyebrow">Your experience is worth remembering</p>
+    <h1>Your work memories</h1>
+    <p>Significant moments, contributions, and things you learned. No metrics or proof required.</p>
+    <p class="hint">Newest recorded first. Open a memory to read the full story.</p>
+  </section>
+  {{if .Entries}}
+  <div class="memory-list">
+    {{range .Entries}}
+    <article class="memory-card">
+      <h2><a href="{{entryPath .ID}}">{{.Title}}</a></h2>
+      <p class="metadata">{{if .OccurredAt}}Happened {{timestamp .OccurredAt}}{{else}}Recorded {{timestamp .CreatedAt}}{{end}}</p>
+      {{if .Notes}}<p class="preview">{{.Notes}}</p>{{else}}<p class="hint">No additional notes.</p>{{end}}
+    </article>
+    {{end}}
+  </div>
+  {{else}}
+  <section class="empty-state">
+    <h2>{{if .BeforeID}}No older memories{{else}}Start with something you want to remember{{end}}</h2>
+    <p>{{if .BeforeID}}You have reached the end of this list.{{else}}A problem you investigated. A teammate you helped. A responsibility you took on.{{end}}</p>
+    <a class="button" href="/entries/new">Record a memory</a>
+  </section>
+  {{end}}
+  <nav class="pagination" aria-label="Memory pages">
+    {{if .BeforeID}}<a href="/entries">Newest memories</a>{{end}}
+    {{if .NextBeforeID}}<a class="button secondary" href="/entries?before_id={{.NextBeforeID}}">Older memories</a>{{end}}
+  </nav>
+{{template "footer" .}}{{end}}

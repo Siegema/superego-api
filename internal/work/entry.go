@@ -27,7 +27,8 @@ type EntryInput struct {
 	OccurredAt *time.Time `json:"occurred_at"`
 }
 
-func (input *EntryInput) validate() error {
+// Validate normalizes writable fields and applies rules shared by JSON and HTML input.
+func (input *EntryInput) Validate() error {
 	input.Title = strings.TrimSpace(input.Title)
 	if strings.ContainsRune(input.Title, '\x00') || strings.ContainsRune(input.Notes, '\x00') {
 		return errors.New("title and notes must not contain null characters")

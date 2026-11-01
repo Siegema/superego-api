@@ -1,7 +1,8 @@
 # Superego API
 
 Superego is a work-memory journal for recalling significant tasks, projects,
-roles, and skills. The first API slice provides PostgreSQL-backed entry CRUD.
+roles, and skills. PostgreSQL-backed entry CRUD is available through a Go-rendered
+website and a JSON API.
 
 **Development only:** authentication is not implemented. The command binds to
 `127.0.0.1:8080` by default and uses one fixed development user. Do not expose it through a
@@ -14,8 +15,11 @@ but they are not a substitute for authentication.
 cmd/superego/main.go           Configuration, dependency wiring, server lifecycle
 internal/accounts/            Superego user identity, handlers, and persistence
 internal/work/                Entry types, HTTP handlers, persistence; other model placeholders
+internal/web/                 Server-rendered page and form handlers
 internal/server/routes.go     HTTP route assembly and shared middleware
 internal/database/database.go Shared PostgreSQL connection setup
+web/                          HTML templates embedded into the binary
+assets/                       Embedded CSS; no JavaScript or frontend build tool
 migrations/                   Explicit, reversible SQL schema migrations
 build/                        API/PostgreSQL Containerfiles and Podman Compose stack
 ```
@@ -31,9 +35,10 @@ Within a feature package:
 - `repository.go` handles persistence: CRUD and feature-specific queries. It is
   not an entrypoint to the source-code repository.
 
-Entry handlers currently call the repository directly: there is no separate
-service layer until application rules need coordination. PostgreSQL access uses
-`pgx`; routing uses Go's standard `net/http` package.
+JSON and HTML handlers share `work.EntryInput.Validate` and the same owner-scoped
+repository. The website does not make HTTP calls to its own API. There is no
+separate service layer until application rules need coordination. PostgreSQL
+access uses `pgx`; routing uses Go's standard `net/http` package.
 
 ## Run locally
 
@@ -109,6 +114,36 @@ If `podman compose` cannot connect to its socket, start the rootless socket with
 `systemctl --user start podman.socket`, or use `podman-compose` directly with the
 same `-f build/compose.yaml` arguments.
 
+## Website
+
+After starting the server, open **http://127.0.0.1:8080/** (or `localhost:8080`).
+The website is Go SSR using `html/template`, ordinary HTML forms, and CSS. It
+requires no JavaScript, Node, separate frontend server, or runtime file mounts.
+Templates and assets are embedded at build time; rebuild/restart the command or
+container after changing them. The container build includes both directories.
+
+- `/entries` lists 20 memories per page, newest recorded first, with an “Older
+  memories” cursor and a link back to the newest page.
+- `/entries/new` records a title, optional notes, and an optional occurrence time.
+- `/entries/{id}` displays the full memory, with edit and delete links.
+- `/entries/{id}/edit` updates it. Failed validation or a failed database save
+  redisplays the form with submitted text; a successful save redirects to the
+  entry (`303`), so refreshing the resulting page does not repeat the write.
+- `/entries/{id}/delete` displays a confirmation. Only submitting its POST form
+  deletes data; a GET never does.
+
+Occurrence times in forms are explicitly **UTC**, not inferred from the browser's
+timezone. Native date controls display millisecond precision; if the displayed
+value is unchanged, editing preserves the stored microseconds. Clearing the
+optional occurrence field removes it. Title/notes rules match the JSON API.
+
+Saving is explicit. Automatic drafts, unsaved-change prompts, search, and login
+are not implemented. Validation errors preserve input, but navigating away before
+saving or closing the browser can lose it. Missing/other-owner records show the
+same not-found page. All website routes inherit the server's local Host checks,
+cross-origin protection, request deadline, and no-store policy. User text is
+HTML-escaped; the website's content security policy disallows scripts.
+
 ## Entry API
 
 All paths below use `http://127.0.0.1:8080`. `localhost` is also accepted. Other
@@ -178,7 +213,7 @@ with a trusted per-request identity and retain all ownership checks.
 ## Local checks
 
 ```sh
-gofmt -l cmd internal
+gofmt -l cmd internal web assets
 go vet ./...
 go test -race ./...
 go build ./...
@@ -193,8 +228,10 @@ go test -race -count=1 ./...
 ```
 
 Use a dedicated test database. Integration tests create a uniquely named schema,
-apply the up/down migrations, exercise CRUD, pagination, persistence, and
-cross-owner isolation, then drop only that schema. The test user needs permission
-to create schemas. Without the test URL, the integration test is explicitly
-skipped. An optional security check is
+apply the up/down migrations, exercise JSON/HTML CRUD interoperability,
+pagination, persistence, validation, and cross-owner isolation, then drop only
+that schema. Website unit tests also cover escaping, form input preservation,
+delete confirmation, browser protections, and concurrent rendering. The test
+user needs permission to create schemas. Without the test URL, the integration
+test is explicitly skipped. An optional security check is
 `go run golang.org/x/vuln/cmd/govulncheck@latest ./...`.

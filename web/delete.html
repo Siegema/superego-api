@@ -1,0 +1,14 @@
+{{define "delete"}}{{template "header" .}}
+  <section class="detail">
+    <p class="eyebrow">Permanent deletion</p>
+    <h1>Delete this memory?</h1>
+    <h2>{{.Entry.Title}}</h2>
+    <p>This removes the memory and its notes. It cannot be undone.</p>
+    <form method="post" action="{{entryPath .Entry.ID}}/delete">
+      <div class="actions">
+        <button class="danger" type="submit">Yes, delete this memory</button>
+        <a href="{{entryPath .Entry.ID}}">Keep this memory</a>
+      </div>
+    </form>
+  </section>
+{{template "footer" .}}{{end}}

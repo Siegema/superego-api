@@ -80,7 +80,7 @@ func TestEntryOperations(t *testing.T) {
 	} {
 		t.Run(test.method+test.path, func(t *testing.T) {
 			store := &stubStore{entry: work.Entry{ID: 12}}
-			handler := server.NewHandler(work.NewHandler(store, "owner"))
+			handler := server.NewHandler(work.NewHandler(store, "owner"), nil)
 			w := request(handler, test.method, test.path, test.body)
 			if w.Code != test.status {
 				t.Fatalf("status %d, want %d: %s", w.Code, test.status, w.Body.String())
@@ -133,7 +133,7 @@ func TestEntryValidation(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			for _, method := range []string{"POST", "PUT"} {
 				store := &stubStore{}
-				handler := server.NewHandler(work.NewHandler(store, "owner"))
+				handler := server.NewHandler(work.NewHandler(store, "owner"), nil)
 				path := "/api/entries"
 				if method == "PUT" {
 					path += "/1"
@@ -149,7 +149,7 @@ func TestEntryValidation(t *testing.T) {
 
 func TestOptionalEntryFields(t *testing.T) {
 	store := &stubStore{entry: work.Entry{ID: 1}}
-	handler := server.NewHandler(work.NewHandler(store, "owner"))
+	handler := server.NewHandler(work.NewHandler(store, "owner"), nil)
 	w := request(handler, "POST", "/api/entries", `{"title":"`+strings.Repeat("界", 200)+`","occurred_at":"2026-01-02T12:00:00-05:00"}`)
 	if w.Code != 201 || store.input.Notes != "" {
 		t.Fatalf("optional notes and Unicode title: %d %s", w.Code, w.Body.String())
@@ -171,7 +171,7 @@ func TestInvalidIDsAndPagination(t *testing.T) {
 	for _, path := range paths {
 		t.Run(path, func(t *testing.T) {
 			store := &stubStore{}
-			w := request(server.NewHandler(work.NewHandler(store, "owner")), "GET", path, "")
+			w := request(server.NewHandler(work.NewHandler(store, "owner"), nil), "GET", path, "")
 			if w.Code != 400 || len(store.calls) != 0 {
 				t.Fatalf("status=%d calls=%v", w.Code, store.calls)
 			}
@@ -179,7 +179,7 @@ func TestInvalidIDsAndPagination(t *testing.T) {
 	}
 	for _, method := range []string{"PUT", "DELETE"} {
 		store := &stubStore{}
-		w := request(server.NewHandler(work.NewHandler(store, "owner")), method, "/api/entries/nope", `{"title":"Title"}`)
+		w := request(server.NewHandler(work.NewHandler(store, "owner"), nil), method, "/api/entries/nope", `{"title":"Title"}`)
 		if w.Code != 400 || len(store.calls) != 0 {
 			t.Fatalf("%s invalid id: status=%d calls=%v", method, w.Code, store.calls)
 		}
@@ -188,7 +188,7 @@ func TestInvalidIDsAndPagination(t *testing.T) {
 
 func TestPaginationResponse(t *testing.T) {
 	store := &stubStore{entries: []work.Entry{{ID: 3}, {ID: 2}, {ID: 1}}}
-	handler := server.NewHandler(work.NewHandler(store, "owner"))
+	handler := server.NewHandler(work.NewHandler(store, "owner"), nil)
 	w := request(handler, "GET", "/api/entries?limit=2", "")
 	var page struct {
 		Entries []work.Entry `json:"entries"`
@@ -217,7 +217,7 @@ func TestRepositoryErrors(t *testing.T) {
 	} {
 		for _, method := range []string{"GET", "PUT", "DELETE"} {
 			store := &stubStore{err: test.err}
-			w := request(server.NewHandler(work.NewHandler(store, "owner")), method, "/api/entries/1", `{"title":"Title"}`)
+			w := request(server.NewHandler(work.NewHandler(store, "owner"), nil), method, "/api/entries/1", `{"title":"Title"}`)
 			if w.Code != test.status || strings.Contains(w.Body.String(), "sensitive") {
 				t.Fatalf("%s: status=%d body=%s", method, w.Code, w.Body.String())
 			}
@@ -225,7 +225,7 @@ func TestRepositoryErrors(t *testing.T) {
 	}
 	for _, method := range []string{"POST", "GET"} {
 		store := &stubStore{err: errors.New("sensitive SQL details")}
-		w := request(server.NewHandler(work.NewHandler(store, "owner")), method, "/api/entries", `{"title":"Title"}`)
+		w := request(server.NewHandler(work.NewHandler(store, "owner"), nil), method, "/api/entries", `{"title":"Title"}`)
 		if w.Code != 500 || strings.Contains(w.Body.String(), "sensitive") {
 			t.Fatalf("%s: status=%d body=%s", method, w.Code, w.Body.String())
 		}
@@ -249,7 +249,7 @@ func TestLocalServerProtections(t *testing.T) {
 			r.Header.Set("Content-Type", test.contentType)
 			r.Header.Set("Origin", test.origin)
 			w := httptest.NewRecorder()
-			server.NewHandler(work.NewHandler(store, "owner")).ServeHTTP(w, r)
+			server.NewHandler(work.NewHandler(store, "owner"), nil).ServeHTTP(w, r)
 			if w.Code != test.status {
 				t.Fatalf("status=%d body=%s", w.Code, w.Body.String())
 			}
@@ -262,7 +262,7 @@ func TestLocalServerProtections(t *testing.T) {
 
 func TestRouting(t *testing.T) {
 	store := &stubStore{}
-	handler := server.NewHandler(work.NewHandler(store, "owner"))
+	handler := server.NewHandler(work.NewHandler(store, "owner"), nil)
 	if w := request(handler, "PATCH", "/api/entries/1", "{}"); w.Code != http.StatusMethodNotAllowed {
 		t.Fatalf("PATCH returned %d", w.Code)
 	}

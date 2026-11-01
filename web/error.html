@@ -1,0 +1,7 @@
+{{define "error"}}{{template "header" .}}
+  <section class="detail">
+    <h1>{{.Title}}</h1>
+    <p role="alert">{{.Error}}</p>
+    <a class="button" href="/entries">Back to memories</a>
+  </section>
+{{template "footer" .}}{{end}}

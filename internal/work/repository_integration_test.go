@@ -88,8 +88,8 @@ func TestPostgresEntryLifecycle(t *testing.T) {
 	}
 	repo := work.NewRepository(pool)
 	owner := accounts.DevelopmentUserID
-	handler := server.NewHandler(work.NewHandler(repo, owner))
-	otherHandler := server.NewHandler(work.NewHandler(repo, "another-user"))
+	handler := server.NewHandler(work.NewHandler(repo, owner), nil)
+	otherHandler := server.NewHandler(work.NewHandler(repo, "another-user"), nil)
 
 	w := request(handler, "POST", "/api/entries", `{"title":"  Fixed deployments  ","notes":"Teammates can deploy independently.","occurred_at":"2026-01-02T12:00:00-05:00"}`)
 	if w.Code != 201 {

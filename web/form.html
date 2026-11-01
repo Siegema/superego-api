@@ -1,0 +1,32 @@
+{{define "form"}}{{template "header" .}}
+  <a class="back-link" href="{{if .Editing}}{{entryPath .Entry.ID}}{{else}}/entries{{end}}">← Cancel and go back</a>
+  <section class="page-heading">
+    <p class="eyebrow">A note for your future self</p>
+    <h1>{{.Title}}</h1>
+    <p>Capture what happened in your own words. You do not need a measurable outcome.</p>
+  </section>
+  {{if .Error}}<div class="error-summary" role="alert"><h2>We could not save this memory</h2><p>{{.Error}}</p></div>{{end}}
+  <form class="entry-form" method="post" action="{{.Action}}">
+    <div class="field">
+      <label for="title">What happened? <span class="hint">(required)</span></label>
+      <input id="title" name="title" type="text" value="{{.Form.Title}}" required aria-describedby="title-hint">
+      <p class="hint" id="title-hint">A short title, up to 200 characters.</p>
+    </div>
+    <div class="field">
+      <label for="notes">What do you want to remember?</label>
+      <textarea id="notes" name="notes" rows="10" aria-describedby="notes-hint">
+{{.Form.Notes}}</textarea>
+      <p class="hint" id="notes-hint">What you did, learned, or want to recall later. Optional, up to 20,000 characters.</p>
+    </div>
+    <div class="field">
+      <label for="occurred_at">When did it happen? <span class="hint">(optional, UTC)</span></label>
+      <input id="occurred_at" name="occurred_at" type="datetime-local" step="any" value="{{.Form.OccurredAt}}" aria-describedby="date-hint">
+      <p class="hint" id="date-hint">Times are interpreted as UTC, not your browser's local timezone. Leave blank if you are unsure.</p>
+    </div>
+    <div class="actions">
+      <button type="submit">Save memory</button>
+      <a href="{{if .Editing}}{{entryPath .Entry.ID}}{{else}}/entries{{end}}">Cancel</a>
+    </div>
+    <p class="hint">Nothing is saved until you select “Save memory.”</p>
+  </form>
+{{template "footer" .}}{{end}}

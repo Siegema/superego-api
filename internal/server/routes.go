@@ -10,13 +10,18 @@ import (
 	"github.com/siegema/superego-api/internal/work"
 )
 
-func NewHandler(entries *work.Handler) http.Handler {
+func NewHandler(entries *work.Handler, website http.Handler) http.Handler {
+	api := http.NewServeMux()
+	api.HandleFunc("POST /api/entries", entries.CreateEntry)
+	api.HandleFunc("GET /api/entries", entries.ListEntries)
+	api.HandleFunc("GET /api/entries/{id}", entries.GetEntry)
+	api.HandleFunc("PUT /api/entries/{id}", entries.UpdateEntry)
+	api.HandleFunc("DELETE /api/entries/{id}", entries.DeleteEntry)
 	mux := http.NewServeMux()
-	mux.HandleFunc("POST /api/entries", entries.CreateEntry)
-	mux.HandleFunc("GET /api/entries", entries.ListEntries)
-	mux.HandleFunc("GET /api/entries/{id}", entries.GetEntry)
-	mux.HandleFunc("PUT /api/entries/{id}", entries.UpdateEntry)
-	mux.HandleFunc("DELETE /api/entries/{id}", entries.DeleteEntry)
+	mux.Handle("/api/", api)
+	if website != nil {
+		mux.Handle("/", website)
+	}
 	protected := http.NewCrossOriginProtection().Handler(mux)
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		// Work memories must not be cached by clients or intermediaries.

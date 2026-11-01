@@ -90,7 +90,7 @@ func readInput(w http.ResponseWriter, r *http.Request) (EntryInput, bool) {
 		writeError(w, http.StatusBadRequest, "entry must be a JSON object")
 		return EntryInput{}, false
 	}
-	if err := input.validate(); err != nil {
+	if err := input.Validate(); err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return EntryInput{}, false
 	}
