@@ -1,0 +1,4 @@
+BEGIN;
+DROP TABLE entries;
+DROP TABLE users;
+COMMIT;
