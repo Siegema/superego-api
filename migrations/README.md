@@ -1,7 +1,10 @@
 # Database migrations
 
 Migrations are versioned SQL files applied explicitly with `psql`. No migration
-framework or automatic startup migration is used for this first slice.
+framework or automatic API startup migration is used for this first slice.
+The PostgreSQL container image in `build/` bootstraps `0001_entries.up.sql` only
+when initializing an empty data volume. Do not reapply it to that database;
+existing volumes and later migrations still require explicit migration steps.
 
 `0001_entries.up.sql` creates minimal local users, private entries, the ownership
 foreign key, and the owner/pagination index. It does not seed a development user;

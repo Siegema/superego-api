@@ -1,0 +1,5 @@
+# Match the PostgreSQL major version used for local development.
+FROM docker.io/library/postgres:17
+
+# Bootstrap only a new, empty data volume. Later migrations remain explicit.
+COPY migrations/0001_entries.up.sql /docker-entrypoint-initdb.d/0001_entries.sql

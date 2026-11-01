@@ -4,7 +4,7 @@ Superego is a work-memory journal for recalling significant tasks, projects,
 roles, and skills. The first API slice provides PostgreSQL-backed entry CRUD.
 
 **Development only:** authentication is not implemented. The command binds to
-`127.0.0.1:8080` and uses one fixed development user. Do not expose it through a
+`127.0.0.1:8080` by default and uses one fixed development user. Do not expose it through a
 public proxy, tunnel, or shared environment. Ownership-scoped queries are in place,
 but they are not a substitute for authentication.
 
@@ -17,6 +17,7 @@ internal/work/                Entry types, HTTP handlers, persistence; other mod
 internal/server/routes.go     HTTP route assembly and shared middleware
 internal/database/database.go Shared PostgreSQL connection setup
 migrations/                   Explicit, reversible SQL schema migrations
+build/                        API/PostgreSQL Containerfiles and Podman Compose stack
 ```
 
 Files in each directory share a package. For example, `internal/work/entry.go`
@@ -51,6 +52,62 @@ local database connection. Do not commit real connection strings. Migrations are
 manual, not run automatically at startup; see [migrations](migrations/README.md).
 Startup verifies database connectivity and creates the development user
 idempotently. SIGINT/SIGTERM initiate graceful shutdown.
+
+### Build and run with Podman Compose
+
+Install Podman and a Compose provider such as `podman-compose`. Run these commands
+from the repository root. Both Containerfiles and the Compose configuration live
+in `build/`; build contexts point to the repository root.
+
+```sh
+# Example credentials for local development only; choose your own password.
+export POSTGRES_PASSWORD='superego-local-only'
+podman compose -f build/compose.yaml build
+podman compose -f build/compose.yaml up -d
+podman compose -f build/compose.yaml ps
+curl http://127.0.0.1:8080/api/entries
+```
+
+The API image uses a multi-stage Go build (matching `go.mod`) and runs a static
+binary as a non-root user. PostgreSQL 17 stores its data in a named volume and
+applies the initial schema automatically **only when that volume is empty**. The
+API waits for PostgreSQL's health check before starting. Both published ports
+(`8080` and `5432`) bind only to `127.0.0.1` on the host.
+
+Inside Compose, the API connects to `postgres:5432`, not `localhost`. The password
+is passed through `PGPASSWORD`, avoiding URL-encoding issues. `HTTP_ADDR` is set
+to `0.0.0.0:8080` inside the API container so port forwarding works; the default
+outside Compose remains `127.0.0.1:8080`. Do not publish the API on a public host
+interface: authentication is not implemented.
+
+If reusing a volume from the earlier database-only setup, apply the initial
+migration **only if it has not already been applied**, then start the API:
+
+```sh
+podman compose -f build/compose.yaml up -d postgres
+# Wait for PostgreSQL to become healthy before applying the migration.
+podman compose -f build/compose.yaml exec -T postgres psql -U superego -d superego -v ON_ERROR_STOP=1 < migrations/0001_entries.up.sql
+podman compose -f build/compose.yaml up -d api
+```
+
+The explicit Compose project name `superego-api` preserves the previous volume
+name when moving the files into `build/`. Later migrations remain manual.
+`POSTGRES_PASSWORD` initializes a new volume only; changing the variable later
+does not change an existing database password. Keep it set when running Compose
+commands.
+
+Useful commands:
+
+```sh
+podman compose -f build/compose.yaml logs -f api postgres
+podman compose -f build/compose.yaml exec postgres psql -U superego -d superego
+podman compose -f build/compose.yaml down
+```
+
+`down` retains database data. Adding `--volumes` permanently deletes the database.
+If `podman compose` cannot connect to its socket, start the rootless socket with
+`systemctl --user start podman.socket`, or use `podman-compose` directly with the
+same `-f build/compose.yaml` arguments.
 
 ## Entry API
 

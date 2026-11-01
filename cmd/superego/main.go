@@ -40,7 +40,7 @@ func run(ctx context.Context) error {
 	handler := server.NewHandler(work.NewHandler(work.NewRepository(pool), accounts.DevelopmentUserID))
 	srv := &http.Server{
 		// There is no authentication yet. Do not expose this listener publicly.
-		Addr:              "127.0.0.1:8080",
+		Addr:              httpAddress(),
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,
 		ReadTimeout:       10 * time.Second,
@@ -65,4 +65,11 @@ func run(ctx context.Context) error {
 		}
 		return nil
 	}
+}
+
+func httpAddress() string {
+	if addr := os.Getenv("HTTP_ADDR"); addr != "" {
+		return addr
+	}
+	return "127.0.0.1:8080"
 }
