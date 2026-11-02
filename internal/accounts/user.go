@@ -1,4 +1,6 @@
-// Package accounts will manage Superego users, not their employment history.
+// Package accounts manages Superego users, not their employment history.
 package accounts
 
-// User identity and profile types will live here. Authentication is deferred.
+// DevelopmentUserID is only for the loopback-only, unauthenticated server.
+// It must be replaced with a trusted per-request identity before public use.
+const DevelopmentUserID = "development"

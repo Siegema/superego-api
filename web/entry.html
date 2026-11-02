@@ -1,0 +1,20 @@
+{{define "entry"}}{{template "header" .}}
+  <a class="back-link" href="/entries">← All memories</a>
+  <article class="detail">
+    <p class="eyebrow">Work memory</p>
+    <h1>{{.Entry.Title}}</h1>
+    {{if .Entry.OccurredAt}}<p class="metadata">Happened {{timestamp .Entry.OccurredAt}}</p>{{end}}
+    <section aria-labelledby="notes-heading">
+      <h2 id="notes-heading">What you wanted to remember</h2>
+      {{if .Entry.Notes}}<div class="notes">{{.Entry.Notes}}</div>{{else}}<p class="hint">No additional notes. The title can be enough.</p>{{end}}
+    </section>
+    <dl class="timestamps">
+      <div><dt>Recorded</dt><dd>{{timestamp .Entry.CreatedAt}}</dd></div>
+      <div><dt>Last saved</dt><dd>{{timestamp .Entry.UpdatedAt}}</dd></div>
+    </dl>
+    <div class="actions">
+      <a class="button" href="{{entryPath .Entry.ID}}/edit">Edit memory</a>
+      <a class="danger-link" href="{{entryPath .Entry.ID}}/delete">Delete memory</a>
+    </div>
+  </article>
+{{template "footer" .}}{{end}}

@@ -1,0 +1,25 @@
+{{define "header"}}<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{.Title}} · Superego</title>
+  <link rel="stylesheet" href="/assets/style.css">
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to content</a>
+  <header class="site-header">
+    <a class="brand" href="/entries">Superego<span>Your work, remembered.</span></a>
+    <nav aria-label="Main navigation">
+      <a href="/entries">Memories</a>
+      <a class="button" href="/entries/new">Record a memory</a>
+    </nav>
+  </header>
+  <main id="main" class="container">
+{{end}}
+
+{{define "footer"}}
+  </main>
+  <footer class="site-footer">Local development · Authentication is not enabled. Save explicitly; drafts are not automatic.</footer>
+</body>
+</html>{{end}}

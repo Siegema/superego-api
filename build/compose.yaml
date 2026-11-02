@@ -1,0 +1,38 @@
+name: superego-api
+
+services:
+  api:
+    build:
+      context: ..
+      dockerfile: build/Containerfile
+    environment:
+      DATABASE_URL: postgres://superego@postgres:5432/superego?sslmode=disable
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting the stack}
+      HTTP_ADDR: 0.0.0.0:8080
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  postgres:
+    build:
+      context: ..
+      dockerfile: build/Containerfile.postgres
+    environment:
+      POSTGRES_DB: superego
+      POSTGRES_USER: superego
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD before starting PostgreSQL}
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$$POSTGRES_USER\" -d \"$$POSTGRES_DB\""]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+
+volumes:
+  postgres_data:
